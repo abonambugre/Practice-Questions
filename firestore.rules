@@ -1,0 +1,70 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // ===============================================================
+    // Assumed Data Model
+    // ===============================================================
+    //
+    // Collection: users
+    // Document ID: {userId}
+    // Fields:
+    //   - uid: string (required)
+    //   - email: string (required)
+    //   - displayName: string (optional)
+    //   - createdAt: timestamp (required)
+    //
+    // Collection: users/{userId}/attempts
+    // Document ID: {attemptId}
+    // Fields:
+    //   - userId: string (required)
+    //   - core: number (required, 1 or 2)
+    //   - score: number (required)
+    //   - total: number (required)
+    //   - timestamp: timestamp (required)
+    //   - answers: list (required)
+    //
+    // ===============================================================
+
+    // Helper Functions
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isAuthenticated() && request.auth.uid == userId;
+    }
+
+    function isValidUser(data) {
+      return data.keys().hasAll(['uid', 'email', 'createdAt']) &&
+             data.uid is string &&
+             data.email is string &&
+             data.createdAt is timestamp;
+    }
+
+    function isValidAttempt(data) {
+      return data.keys().hasAll(['userId', 'core', 'score', 'total', 'timestamp', 'answers']) &&
+             data.userId == request.auth.uid &&
+             data.core in [1, 2] &&
+             data.score is number &&
+             data.total is number &&
+             data.timestamp is timestamp &&
+             data.answers is list;
+    }
+
+    // Rules
+    match /users/{userId} {
+      allow read, write: if isOwner(userId) && (request.method != 'create' || isValidUser(request.resource.data));
+      
+      match /attempts/{attemptId} {
+        allow read: if isOwner(userId);
+        allow create: if isOwner(userId) && isValidAttempt(request.resource.data);
+      }
+    }
+
+    // Default deny
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

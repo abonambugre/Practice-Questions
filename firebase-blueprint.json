@@ -1,0 +1,50 @@
+{
+  "entities": {
+    "QuizAttempt": {
+      "title": "Quiz Attempt",
+      "description": "Records details of a completed quiz session",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string", "description": "The UID of the student" },
+        "core": { "type": "number", "enum": [1, 2], "description": "CompTIA A+ Core 1 or 2" },
+        "score": { "type": "number", "description": "Number of correct answers" },
+        "total": { "type": "number", "description": "Total number of questions" },
+        "timestamp": { "type": "string", "format": "date-time", "description": "When the attempt was completed" },
+        "answers": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "questionId": { "type": "string" },
+              "selectedOption": { "type": "number" },
+              "isCorrect": { "type": "boolean" }
+            }
+          }
+        }
+      },
+      "required": ["userId", "core", "score", "total", "timestamp", "answers"]
+    },
+    "UserProfile": {
+      "title": "User Profile",
+      "description": "Basic user information",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string" },
+        "email": { "type": "string" },
+        "displayName": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["uid", "email", "createdAt"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": "UserProfile",
+      "description": "Private user profile data"
+    },
+    "/users/{userId}/attempts/{attemptId}": {
+      "schema": "QuizAttempt",
+      "description": "Historical quiz attempts for a user"
+    }
+  }
+}
